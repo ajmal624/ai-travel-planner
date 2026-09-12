@@ -6,14 +6,16 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+# ============================================================
 # Security
+# ============================================================
+
 SECRET_KEY = os.environ.get(
     "SECRET_KEY",
     "change-this-secret-key-for-local-development",
 )
 
 DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
-
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -25,7 +27,10 @@ ALLOWED_HOSTS = [
 ]
 
 
+# ============================================================
 # Applications
+# ============================================================
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -39,7 +44,10 @@ INSTALLED_APPS = [
 ]
 
 
+# ============================================================
 # Middleware
+# ============================================================
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -55,7 +63,10 @@ MIDDLEWARE = [
 ROOT_URLCONF = "travel_api.urls"
 
 
+# ============================================================
 # Templates
+# ============================================================
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -72,11 +83,18 @@ TEMPLATES = [
 ]
 
 
+# ============================================================
+# WSGI / ASGI
+# ============================================================
+
 WSGI_APPLICATION = "travel_api.wsgi.application"
 ASGI_APPLICATION = "travel_api.asgi.application"
 
 
+# ============================================================
 # Database
+# ============================================================
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -85,27 +103,46 @@ DATABASES = {
 }
 
 
+# ============================================================
 # Password validation
+# ============================================================
+
 AUTH_PASSWORD_VALIDATORS = []
 
 
+# ============================================================
 # Internationalization
+# ============================================================
+
 LANGUAGE_CODE = "en-us"
+
 TIME_ZONE = "Asia/Kolkata"
 
 USE_I18N = True
 USE_TZ = True
 
 
+# ============================================================
 # Static files
+# ============================================================
+
 STATIC_URL = "static/"
+
+# Required for Render collectstatic
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+
+# ============================================================
+# Default primary key
+# ============================================================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
+# ============================================================
 # CORS
+# ============================================================
+
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(
@@ -116,7 +153,10 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
+# ============================================================
 # CSRF
+# ============================================================
+
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(
@@ -127,7 +167,10 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
+# ============================================================
 # Django REST Framework
+# ============================================================
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -138,7 +181,10 @@ REST_FRAMEWORK = {
 }
 
 
+# ============================================================
 # JWT
+# ============================================================
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=4),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
