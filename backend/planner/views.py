@@ -25,9 +25,10 @@ class TripViewSet(viewsets.ModelViewSet):
     serializer_class = TripSerializer
 
     def get_queryset(self):
-        return Trip.objects.filter(
-            user=self.request.user
-        ).prefetch_related("itinerary_items")
+        return (
+            Trip.objects.filter(user=self.request.user)
+            .prefetch_related("itinerary_items")
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -57,8 +58,14 @@ class TripViewSet(viewsets.ModelViewSet):
         }
 
         city = trip.city
-        base_cost = budget_costs.get(trip.budget, Decimal("900"))
-        slots = pace_slots.get(trip.pace, pace_slots["balanced"])
+        base_cost = budget_costs.get(
+            trip.budget,
+            Decimal("900"),
+        )
+        slots = pace_slots.get(
+            trip.pace,
+            pace_slots["balanced"],
+        )
 
         suggestions = {
             "food": [
@@ -187,7 +194,9 @@ class TripViewSet(viewsets.ModelViewSet):
 
         for interest in interests:
             if interest in suggestions:
-                selected_suggestions.extend(suggestions[interest])
+                selected_suggestions.extend(
+                    suggestions[interest]
+                )
 
         if not selected_suggestions:
             selected_suggestions = default_suggestions
@@ -213,7 +222,9 @@ class TripViewSet(viewsets.ModelViewSet):
                 activity_cost = base_cost
 
                 if time_slot == "evening":
-                    activity_cost = base_cost * Decimal("1.2")
+                    activity_cost = (
+                        base_cost * Decimal("1.2")
+                    )
 
                 item = ItineraryItem.objects.create(
                     trip=trip,
@@ -237,7 +248,10 @@ class TripViewSet(viewsets.ModelViewSet):
 
         return Response(
             {
-                "message": "Your personalized travel itinerary was created.",
+                "message": (
+                    "Your personalized travel itinerary "
+                    "was created."
+                ),
                 "estimated_budget": trip.estimated_budget,
                 "items": ItineraryItemSerializer(
                     created_items,
@@ -253,14 +267,19 @@ class ItineraryItemViewSet(viewsets.ModelViewSet):
     serializer_class = ItineraryItemSerializer
 
     def get_queryset(self):
-        queryset = ItineraryItem.objects.filter(
-            trip__user=self.request.user
-        ).select_related("trip")
+        queryset = (
+            ItineraryItem.objects.filter(
+                trip__user=self.request.user
+            )
+            .select_related("trip")
+        )
 
         trip_id = self.request.query_params.get("trip")
 
         if trip_id:
-            queryset = queryset.filter(trip_id=trip_id)
+            queryset = queryset.filter(
+                trip_id=trip_id
+            )
 
         return queryset
 
@@ -269,10 +288,12 @@ class ItineraryItemViewSet(viewsets.ModelViewSet):
 
 
 class DashboardViewSet(viewsets.ViewSet):
+
     def list(self, request):
-        trips = Trip.objects.filter(
-            user=request.user
-        ).prefetch_related("itinerary_items")
+        trips = (
+            Trip.objects.filter(user=request.user)
+            .prefetch_related("itinerary_items")
+        )
 
         total_trips = trips.count()
 
