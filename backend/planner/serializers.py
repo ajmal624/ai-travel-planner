@@ -50,7 +50,9 @@ class TripSerializer(serializers.ModelSerializer):
         ]
 
     def get_total_estimated_cost(self, obj):
-        total = sum(item.estimated_cost for item in obj.itinerary_items.all())
+        total = sum(
+            item.estimated_cost for item in obj.itinerary_items.all()
+        )
         return total
 
     def get_trip_days(self, obj):
@@ -65,6 +67,7 @@ class TripSerializer(serializers.ModelSerializer):
 
 
 class ItineraryItemSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = ItineraryItem
         fields = [
