@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import api from "../api";
 
 export default function CreateTrip() {
   const navigate = useNavigate();
+
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -13,21 +14,69 @@ export default function CreateTrip() {
     country: "",
     start_date: "",
     end_date: "",
-    budget: "medium",
+    budget: "moderate",
     pace: "balanced",
     interests: "",
     travelers: 1,
   });
 
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setForm((previousForm) => ({
+      ...previousForm,
+      [name]: name === "travelers" ? Number(value) : value,
+    }));
+  }
+
   async function submit(event) {
     event.preventDefault();
+
     setError("");
+    setLoading(true);
 
     try {
-      const response = await api.post("trips/", form);
+      const tripData = {
+        title: form.title.trim(),
+        city: form.city.trim(),
+        country: form.country.trim(),
+        start_date: form.start_date,
+        end_date: form.end_date,
+
+        // IMPORTANT:
+        // These values must match Django's BUDGET_CHOICES.
+        budget: form.budget,
+
+        pace: form.pace,
+
+        // Backend currently stores interests as a comma-separated string.
+        interests: form.interests.trim(),
+
+        travelers: Number(form.travelers),
+      };
+
+      const response = await api.post("trips/", tripData);
+
       navigate(`/trips/${response.data.id}`);
-    } catch {
-      setError("Could not create the trip. Check the dates and try again.");
+    } catch (err) {
+      console.error("Create trip error:", err);
+
+      // Show the actual backend error when available.
+      if (err.response?.data) {
+        const backendError = err.response.data;
+
+        if (typeof backendError === "string") {
+          setError(backendError);
+        } else {
+          setError(JSON.stringify(backendError));
+        }
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError("Could not create the trip. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -39,86 +88,96 @@ export default function CreateTrip() {
       </div>
 
       <form className="card form-grid" onSubmit={submit}>
-        {error && <div className="message error">{error}</div>}
+        {error && (
+          <div className="message error">
+            {error}
+          </div>
+        )}
 
+        {/* Trip title */}
         <input
           required
+          name="title"
           placeholder="Trip title, e.g. Dubai Holiday"
           value={form.title}
-          onChange={(event) => setForm({ ...form, title: event.target.value })}
+          onChange={handleChange}
         />
 
+        {/* City */}
         <input
           required
+          name="city"
           placeholder="City, e.g. Dubai"
           value={form.city}
-          onChange={(event) => setForm({ ...form, city: event.target.value })}
+          onChange={handleChange}
         />
 
+        {/* Country */}
         <input
+          name="country"
           placeholder="Country, e.g. UAE"
           value={form.country}
-          onChange={(event) =>
-            setForm({ ...form, country: event.target.value })
-          }
+          onChange={handleChange}
         />
 
+        {/* Start date */}
         <label>
           Start date
           <input
             required
+            name="start_date"
             type="date"
             value={form.start_date}
-            onChange={(event) =>
-              setForm({ ...form, start_date: event.target.value })
-            }
+            onChange={handleChange}
           />
         </label>
 
+        {/* End date */}
         <label>
           End date
           <input
             required
+            name="end_date"
             type="date"
             value={form.end_date}
-            onChange={(event) =>
-              setForm({ ...form, end_date: event.target.value })
-            }
+            onChange={handleChange}
           />
         </label>
 
+        {/* Travelers */}
         <label>
           Number of travelers
           <input
             required
             min="1"
+            name="travelers"
             type="number"
             value={form.travelers}
-            onChange={(event) =>
-              setForm({ ...form, travelers: event.target.value })
-            }
+            onChange={handleChange}
           />
         </label>
 
+        {/* Budget */}
         <label>
           Budget
           <select
+            name="budget"
             value={form.budget}
-            onChange={(event) =>
-              setForm({ ...form, budget: event.target.value })
-            }
+            onChange={handleChange}
           >
-            <option value="low">Budget</option>
-            <option value="medium">Moderate</option>
-            <option value="high">Luxury</option>
+            <option value="budget">Budget</option>
+            <option value="moderate">Moderate</option>
+            <option value="luxary">Luxury</option>
           </select>
         </label>
 
+        {/* Pace */}
         <label>
           Preferred pace
           <select
+            name="pace"
             value={form.pace}
-            onChange={(event) => setForm({ ...form, pace: event.target.value })}
+            onChange={handleChange}
           >
             <option value="slow">Slow and relaxed</option>
             <option value="balanced">Balanced</option>
@@ -126,16 +185,19 @@ export default function CreateTrip() {
           </select>
         </label>
 
+        {/* Interests */}
         <input
           required
+          name="interests"
           placeholder="Interests: food, history, nature, shopping, art, adventure"
           value={form.interests}
-          onChange={(event) =>
-            setForm({ ...form, interests: event.target.value })
-          }
+          onChange={handleChange}
         />
 
-        <button type="submit">Create travel plan</button>
+        {/* Submit */}
+        <button type="submit" disabled={loading}>
+          {loading ? "Creating travel plan..." : "Create travel plan"}
+        </button>
       </form>
     </section>
   );

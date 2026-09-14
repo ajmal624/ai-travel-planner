@@ -5,11 +5,18 @@ from .models import ItineraryItem, Trip
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(
+        write_only=True,
+        min_length=6,
+    )
 
     class Meta:
         model = User
-        fields = ["username", "email", "password"]
+        fields = [
+            "username",
+            "email",
+            "password",
+        ]
 
     def create(self, validated_data):
         return User.objects.create_user(
@@ -41,6 +48,7 @@ class TripSerializer(serializers.ModelSerializer):
             "trip_days",
             "created_at",
         ]
+
         read_only_fields = [
             "id",
             "estimated_budget",
@@ -49,21 +57,50 @@ class TripSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+    def validate(self, attrs):
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
+
+        if (
+            start_date
+            and end_date
+            and end_date < start_date
+        ):
+            raise serializers.ValidationError(
+                {
+                    "end_date": (
+                        "End date must be on or after "
+                        "start date."
+                    )
+                }
+            )
+
+        interests = attrs.get("interests")
+
+        if isinstance(interests, list):
+            cleaned_interests = [
+                str(interest).strip()
+                for interest in interests
+                if str(interest).strip()
+            ]
+
+            attrs["interests"] = ",".join(
+                cleaned_interests
+            )
+
+        return attrs
+
     def get_total_estimated_cost(self, obj):
-        total = sum(
-            item.estimated_cost for item in obj.itinerary_items.all()
+        return sum(
+            item.estimated_cost
+            for item in obj.itinerary_items.all()
         )
-        return total
 
     def get_trip_days(self, obj):
-        return (obj.end_date - obj.start_date).days + 1
-
-    def validate(self, data):
-        if data["end_date"] < data["start_date"]:
-            raise serializers.ValidationError(
-                "End date must be later than or equal to start date."
-            )
-        return data
+        return (
+            (obj.end_date - obj.start_date).days
+            + 1
+        )
 
 
 class ItineraryItemSerializer(serializers.ModelSerializer):
@@ -82,9 +119,17 @@ class ItineraryItemSerializer(serializers.ModelSerializer):
             "completed",
             "generated_by_ai",
         ]
-        read_only_fields = ["id", "generated_by_ai"]
+
+        read_only_fields = [
+            "generated_by_ai",
+        ]
 
     def validate_trip(self, trip):
-        if trip.user != self.context["request"].user:
-            raise serializers.ValidationError("Invalid trip.")
+        request = self.context.get("request")
+
+        if request and trip.user != request.user:
+            raise serializers.ValidationError(
+                "You can only use your own trips."
+            )
+
         return trip

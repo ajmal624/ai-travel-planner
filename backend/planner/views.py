@@ -33,35 +33,57 @@ class TripViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(detail=True, methods=["post"], url_path="generate-itinerary")
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="generate-itinerary",
+    )
     def generate_itinerary(self, request, pk=None):
         trip = self.get_object()
 
-        trip.itinerary_items.filter(generated_by_ai=True).delete()
+        # Remove previously AI-generated itinerary items
+        trip.itinerary_items.filter(
+            generated_by_ai=True
+        ).delete()
 
+        # Convert comma-separated interests into a list
         interests = [
             interest.strip().lower()
             for interest in trip.interests.split(",")
             if interest.strip()
         ]
 
+        # Budget values must match Trip.BUDGET_CHOICES
         budget_costs = {
-            "low": Decimal("300"),
-            "medium": Decimal("900"),
-            "high": Decimal("2500"),
+            "budget": Decimal("300"),
+            "moderate": Decimal("900"),
+            "luxary": Decimal("2500"),
         }
 
         pace_slots = {
-            "slow": ["morning", "evening"],
-            "balanced": ["morning", "afternoon", "evening"],
-            "fast": ["morning", "afternoon", "evening"],
+            "slow": [
+                "morning",
+                "evening",
+            ],
+            "balanced": [
+                "morning",
+                "afternoon",
+                "evening",
+            ],
+            "fast": [
+                "morning",
+                "afternoon",
+                "evening",
+            ],
         }
 
         city = trip.city
+
         base_cost = budget_costs.get(
             trip.budget,
             Decimal("900"),
         )
+
         slots = pace_slots.get(
             trip.pace,
             pace_slots["balanced"],
@@ -202,6 +224,7 @@ class TripViewSet(viewsets.ModelViewSet):
             selected_suggestions = default_suggestions
 
         created_items = []
+
         current_date = trip.start_date
         suggestion_index = 0
         total_cost = Decimal("0")
@@ -214,9 +237,13 @@ class TripViewSet(viewsets.ModelViewSet):
 
                 title, category, description = suggestion
 
-                if trip.pace == "fast" and slot_index == 1:
+                if (
+                    trip.pace == "fast"
+                    and slot_index == 1
+                ):
                     description += (
-                        " Keep travel time short to fit more activities."
+                        " Keep travel time short to fit "
+                        "more activities."
                     )
 
                 activity_cost = base_cost
@@ -238,12 +265,16 @@ class TripViewSet(viewsets.ModelViewSet):
                 )
 
                 created_items.append(item)
+
                 total_cost += activity_cost
                 suggestion_index += 1
 
             current_date += timedelta(days=1)
 
-        trip.estimated_budget = total_cost * trip.travelers
+        trip.estimated_budget = (
+            total_cost * trip.travelers
+        )
+
         trip.save()
 
         return Response(
@@ -297,16 +328,22 @@ class DashboardViewSet(viewsets.ViewSet):
 
         total_trips = trips.count()
 
-        total_activities = ItineraryItem.objects.filter(
-            trip__user=request.user
-        ).count()
+        total_activities = (
+            ItineraryItem.objects.filter(
+                trip__user=request.user
+            ).count()
+        )
 
-        completed_activities = ItineraryItem.objects.filter(
-            trip__user=request.user,
-            completed=True,
-        ).count()
+        completed_activities = (
+            ItineraryItem.objects.filter(
+                trip__user=request.user,
+                completed=True,
+            ).count()
+        )
 
-        upcoming_trips = trips.order_by("start_date")[:5]
+        upcoming_trips = trips.order_by(
+            "start_date"
+        )[:5]
 
         return Response(
             {
